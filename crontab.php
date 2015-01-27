@@ -85,8 +85,14 @@ class Crontab {
 	 */
 	public $dayOfWeek = '*';
 	
+	/**
+	 * @var string
+	 */
 	public $user = 'root';
 	
+	/**
+	 * @var string
+	 */
 	public $file_output = null;
 
 	/**
@@ -94,6 +100,9 @@ class Crontab {
 	 */
 	public $jobs = array();
 
+	/**
+	 * Method __construct
+	 */
 	public function __construct() {
 		$out = array();
 		exec('whoami', $out);
@@ -112,6 +121,10 @@ class Crontab {
 		debug($out);
 	}
 
+	/**
+	 * Method __toString
+	 * @return string
+	 */
 	public function __toString() {
 		pr($this, true);
 		return "";//print_r($this, true);
@@ -177,6 +190,11 @@ class Crontab {
 		return $this;
 	}
 	
+	/**
+	 * Set user
+	 * @param string $user required
+	 * @return object
+	 */
 	public function setUser($user) {
 		if(preg_match(self::$user, $user)) {
 		$this->user = $user;
@@ -184,6 +202,11 @@ class Crontab {
 		return this;
 	}
 	
+	/**
+	 * Set output file
+	 * @param string $file_output required
+	 * @return object
+	 */
 	public function setFileOutput($file_output) {
 		$this->file_output = $file_output;
 		return $this;
