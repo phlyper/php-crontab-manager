@@ -1,4 +1,5 @@
-<?
+<?php
+
 /**
  * @author Ryan Faerman <ryan.faerman@gmail.com>
  * @version 0.1
@@ -25,172 +26,246 @@
  * THE SOFTWARE.
  *
  */
- 
 class Crontab {
-	
+
+	public $sudo = ''; //'sudo -u root';
+
 	/**
 	 * Location of the crontab executable
 	 * @var string
 	 */
-	var $crontab = '/usr/bin/crontab';
-	
+	public $crontab = '/etc/crontab';
+
 	/**
 	 * Location to save the crontab file.
 	 * @var string
 	 */
-	var $destination = '/tmp/CronManager';
-	
+	public $destination = '/tmp/cronManager';
+
+	/**
+	 * @var $regex
+	 */
+	public static $regex = array(
+		'minute' => '/[\*,\/\-0-9]+/',
+		'hour' => '/[\*,\/\-0-9]+/',
+		'dayOfMonth' => '/[\*,\/\-\?LW0-9A-Za-z]+/',
+		'month' => '/[\*,\/\-0-9A-Z]+/',
+		'dayOfWeek' => '/[\*,\/\-0-9A-Z]+/',
+		'user' => '/^[a-z][\_\-a-z0-9]*$/',
+		'command' => '/^(.)*$/',
+	);
+
 	/**
 	 * Minute (0 - 59)
 	 * @var string
 	 */
-	var $minute	= 0;
-	
+	public $minute = 0;
+
 	/**
 	 * Hour (0 - 23)
 	 * @var string
 	 */
-	var $hour = 10;
-	
+	public $hour = 10;
+
 	/**
 	 * Day of Month (1 - 31)
 	 * @var string
 	 */
-	var	$dayOfMonth = '*';
-	
+	var $dayOfMonth = '*';
+
 	/**
 	 * Month (1 - 12) OR jan,feb,mar,apr...
 	 * @var string
 	 */
-	var $month = '*';
-	
+	public $month = '*';
+
 	/**
 	 * Day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
 	 * @var string
 	 */
-	var $dayOfWeek = '*';
+	public $dayOfWeek = '*';
 	
+	public $user = 'root';
+	
+	public $file_output = null;
+
 	/**
 	 * @var array
 	 */
-	var $jobs = array();
-	
-	function Crontab() {
+	public $jobs = array();
+
+	public function __construct() {
+		$out = array();
+		exec('whoami', $out);
+		debug($out);
+		$user = $out[0];
+		$out = array();
+		exec($this->sudo . " ls /var/spool/cron/contabs/{$user}", $out);
+		debug($out);
+		if (empty($out)) {
+			$out = array();
+			exec($this->sudo . " touch /var/spool/cron/contabs/{$user}", $out);
+			debug($out);
+		}
+		$out = array();
+		exec($this->sudo . " ls /var/spool/cron/contabs/{$user}", $out);
+		debug($out);
 	}
-	
+
+	public function __toString() {
+		pr($this, true);
+		return "";//print_r($this, true);
+	}
+
 	/**
-	* Set minute or minutes
-	* @param string $minute required
-	* @return object
-	*/
-	function onMinute($minute) {
-		$this->minute = $minute;
+	 * Set minute or minutes
+	 * @param string $minute required
+	 * @return object
+	 */
+	public function onMinute($minute) {
+		if (preg_match(self::$regex['minute'], $minute)) {
+			$this->minute = $minute;
+		}
+		return $this;
+	}
+
+	/**
+	 * Set hour or hours
+	 * @param string $hour required
+	 * @return object
+	 */
+	public function onHour($hour) {
+		if (preg_match(self::$regex['hour'], $hour)) {
+			$this->hour = $hour;
+		}
+		return $this;
+	}
+
+	/**
+	 * Set day of month or days of month
+	 * @param string $dayOfMonth required
+	 * @return object
+	 */
+	public function onDayOfMonth($dayOfMonth) {
+		if (preg_match(self::$regex['dayOfMonth'], $dayOfMonth)) {
+			$this->dayOfMonth = $dayOfMonth;
+		}
+		return $this;
+	}
+
+	/**
+	 * Set month or months
+	 * @param string $month required
+	 * @return object
+	 */
+	public function onMonth($month) {
+		if (preg_match(self::$regex['month'], $month)) {
+			$this->month = $month;
+		}
+		return $this;
+	}
+
+	/**
+	 * Set day of week or days of week
+	 * @param string $dayOfWeek required
+	 * @return object
+	 */
+	public function onDayOfWeek($dayOfWeek) {
+		if (preg_match(self::$regex['dayOfWeek'], $dayOfWeek)) {
+			$this->dayOfWeek = $dayOfWeek;
+		}
 		return $this;
 	}
 	
-	/**
-	* Set hour or hours
-	* @param string $hour required
-	* @return object
-	*/
-	function onHour($hour) {
-		$this->hour = $hour;
-		return $this;
+	public function setUser($user) {
+		if(preg_match(self::$user, $user)) {
+		$this->user = $user;
+		}
+		return this;
 	}
 	
-	/**
-	* Set day of month or days of month
-	* @param string $dayOfMonth required
-	* @return object
-	*/
-	function onDayOfMonth($dayOfMonth) {
-		$this->dayOfMonth = $dayOfMonth;
+	public function setFileOutput($file_output) {
+		$this->file_output = $file_output;
 		return $this;
 	}
-	
+
 	/**
-	* Set month or months
-	* @param string $month required
-	* @return object
-	*/
-	function onMonth($month) {
-		$this->month = $month;
-		return $this;
-	}
-	
-	/**
-	* Set day of week or days of week
-	* @param string $minute required
-	* @return object
-	*/
-	function onDayOfWeek($dayOfWeek) {
-		$this->dayOfWeek = $dayOfWeek;
-		return $this;
-	}
-	
-	/**
-	* Set entire time code with one function. This has to be a complete entry. See http://en.wikipedia.org/wiki/Cron#crontab_syntax
-	* @param string $timeCode required
-	* @return object
-	*/
-	function on($timeCode) {
+	 * Set entire time code with one public function. 
+	 * This has to be a complete entry. 
+	 * See http://en.wikipedia.org/wiki/Cron#crontab_syntax
+	 * @param string $timeCode required
+	 * @return object
+	 */
+	public function on($timeCode) {
 		list(
-			$this->minute, 
-			$this->hour, 
-			$this->dayOfMonth, 
-			$this->month, 
-			$this->dayOfWeek
-		) = explode(' ', $timeCode);
-		
+				$minute,
+				$hour,
+				$dayOfMonth,
+				$month,
+				$dayOfWeek
+				) = explode(' ', $timeCode);
+		$this->onMinute($minute)
+				->onHour($hour)
+				->onDayOfMonth($dayOfMonth)
+				->onMonth($month)
+				->onDayOfWeek($dayOfWeek);
+
 		return $this;
 	}
-	
+
 	/**
-	* Add job to the jobs array. Each time segment should be set before calling this method. The job should include the absolute path to the commands being used.
-	* @param string $job required
-	* @return object
-	*/
-	function doJob($job) {
-		$this->jobs[] =	$this->minute.' '.
-						$this->hour.' '.
-						$this->dayOfMonth.' '.
-						$this->month.' '.
-						$this->dayOfWeek.' '.
-						$job;
-		
+	 * Add job to the jobs array. Each time segment should be set before calling this method. The job should include the absolute path to the commands being used.
+	 * @param string $command required
+	 * @return object
+	 */
+	public function doJob($command) {
+		if (preg_match(self::$regex['command'], $command)) {
+			$this->jobs[] = $this->minute . ' ' .
+					$this->hour . ' ' .
+					$this->dayOfMonth . ' ' .
+					$this->month . ' ' .
+					$this->dayOfWeek . ' ' .
+					$this->user . ' ' .
+					$command.
+					($this->file_output != null ?  " >> {$this->file_output} 2>&1" : "");
+		}
 		return $this;
 	}
-	
+
 	/**
-	* Save the jobs to disk, remove existing cron
-	* @param boolean $includeOldJobs optional
-	* @return boolean
-	*/
-	function activate($includeOldJobs = true) {
-		$contents  = implode("\n", $this->jobs);
+	 * Save the jobs to disk, remove existing cron
+	 * @param boolean $includeOldJobs optional
+	 * @return boolean
+	 */
+	public function activate($includeOldJobs = true) {
+		$contents = implode("\n", $this->jobs);
 		$contents .= "\n";
-		
-		if($includeOldJobs) {
+
+		if ($includeOldJobs) {
 			$contents .= $this->listJobs();
 		}
-		
-		if(is_writable($this->destination) || !file_exists($this->destination)){
-			exec($this->crontab.' -r;');
+
+		if (is_writable($this->destination) || !file_exists($this->destination)) {
+			$out = array();
+			exec($this->sudo . ' ' . $this->crontab . ' -r', $out);
+			debug($out);
 			file_put_contents($this->destination, $contents, LOCK_EX);
-			exec($this->crontab.' '.$this->destination.';');
+			exec($this->sudo . ' ' . $this->crontab . ' ' . $this->destination, $out);
+			debug($out);
 			return true;
 		}
-		
+
 		return false;
 	}
-	
-	/**
-	* List current cron jobs
-	* @return string
-	*/
-	function listJobs() {
-		return exec($this->crontab.' -l;');
-	}
-}
 
-?>
+	/**
+	 * List current cron jobs
+	 * @return string
+	 */
+	public function listJobs() {
+		$out = array();
+		exec($this->sudo . ' ' . $this->crontab . ' -l', $out);
+		return $out;
+	}
+
+}
