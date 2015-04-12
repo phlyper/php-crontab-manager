@@ -28,72 +28,73 @@
  */
 class Crontab {
 
-	public $sudo = ''; //'sudo -u root';
+	public $sudo = ""; //"sudo -u root";
 
 	/**
 	 * Location of the crontab executable
 	 * @var string
 	 */
-	public $crontab = 'crontab';
+	public $crontab = "/usr/bin/crontab";
 
 	/**
 	 * Location to save the crontab file.
 	 * @var string
 	 */
-	public $destination = '/tmp/cronManager';
+	public $destination = "/tmp/cronManager";
+	
+	/**
+	 * The user executing the comment 'crontab'
+	 * @var string
+	 */
+	public $user = null;
+	
+	/*
+	 * @var bool
+	 */
+	public $useUser = false;
 
 	/**
 	 * @var $regex
 	 */
 	public static $regex = array(
-		'minute' => '/[\*,\/\-0-9]+/',
-		'hour' => '/[\*,\/\-0-9]+/',
-		'dayOfMonth' => '/[\*,\/\-\?LW0-9A-Za-z]+/',
-		'month' => '/[\*,\/\-0-9A-Z]+/',
-		'dayOfWeek' => '/[\*,\/\-0-9A-Z]+/',
-		'user' => '/^[a-z][\_\-A-Za-z0-9]*$/',
-		'command' => '/^(.)*$/',
+		"user" => "/^[a-z][\_\-A-Za-z0-9]*$/",
+		"minute" => "/[\*,\/\-0-9]+/",
+		"hour" => "/[\*,\/\-0-9]+/",
+		"dayOfMonth" => "/[\*,\/\-\?LW0-9A-Za-z]+/",
+		"month" => "/[\*,\/\-0-9A-Z]+/",
+		"dayOfWeek" => "/[\*,\/\-0-9A-Z]+/",
+		"command" => "/^(.)*$/",
 	);
 
 	/**
 	 * Minute (0 - 59)
 	 * @var string
 	 */
-	public $minute = 0;
+	public $minute = 10;
 
 	/**
 	 * Hour (0 - 23)
 	 * @var string
 	 */
-	public $hour = 10;
+	public $hour = "*";
 
 	/**
 	 * Day of Month (1 - 31)
 	 * @var string
 	 */
-	var $dayOfMonth = '*';
+	var $dayOfMonth = "*";
 
 	/**
 	 * Month (1 - 12) OR jan,feb,mar,apr...
 	 * @var string
 	 */
-	public $month = '*';
+	public $month = "*";
 
 	/**
 	 * Day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
 	 * @var string
 	 */
-	public $dayOfWeek = '*';
-	
-	/**
-	 * @var string
-	 */
-	public $user = 'root';
-	
-	/*
-	 * @var bool
-	 */
-	public $useUser = false;
+	public $dayOfWeek = "*";
 	
 	/**
 	 * @var string
@@ -106,14 +107,14 @@ class Crontab {
 	public $jobs = array();
 
 	/**
-	 * Method __construct
+	 * Constructor
 	 */
 	public function __construct() {
-		$out = $this->exec('whoami');
+		$out = $this->exec("whoami");
 		$user = $out[0];
 		//$user = "phlyper";
 		$this->setUser($user);
-		$this->exec($this->sudo . " ls /var/spool/cron/contabs/{$user}");
+		$this->exec("{$this->sudo} ls /var/spool/cron/contabs/{$user}");
 	}
 
 	/**
@@ -145,7 +146,7 @@ class Crontab {
 	 * @return object
 	 */
 	public function onMinute($minute) {
-		if (preg_match(self::$regex['minute'], $minute)) {
+		if (preg_match(self::$regex["minute"], $minute)) {
 			$this->minute = $minute;
 		}
 		return $this;
@@ -157,7 +158,7 @@ class Crontab {
 	 * @return object
 	 */
 	public function onHour($hour) {
-		if (preg_match(self::$regex['hour'], $hour)) {
+		if (preg_match(self::$regex["hour"], $hour)) {
 			$this->hour = $hour;
 		}
 		return $this;
@@ -169,7 +170,7 @@ class Crontab {
 	 * @return object
 	 */
 	public function onDayOfMonth($dayOfMonth) {
-		if (preg_match(self::$regex['dayOfMonth'], $dayOfMonth)) {
+		if (preg_match(self::$regex["dayOfMonth"], $dayOfMonth)) {
 			$this->dayOfMonth = $dayOfMonth;
 		}
 		return $this;
@@ -181,7 +182,7 @@ class Crontab {
 	 * @return object
 	 */
 	public function onMonth($month) {
-		if (preg_match(self::$regex['month'], $month)) {
+		if (preg_match(self::$regex["month"], $month)) {
 			$this->month = $month;
 		}
 		return $this;
@@ -193,7 +194,7 @@ class Crontab {
 	 * @return object
 	 */
 	public function onDayOfWeek($dayOfWeek) {
-		if (preg_match(self::$regex['dayOfWeek'], $dayOfWeek)) {
+		if (preg_match(self::$regex["dayOfWeek"], $dayOfWeek)) {
 			$this->dayOfWeek = $dayOfWeek;
 		}
 		return $this;
@@ -205,7 +206,7 @@ class Crontab {
 	 * @return object
 	 */
 	public function setUser($user) {
-		if(preg_match(self::$regex['user'], $user)) {
+		if(preg_match(self::$regex["user"], $user)) {
 			$this->user = $user;
 		}
 		return $this;
@@ -242,17 +243,18 @@ class Crontab {
 	 */
 	public function on($timeCode) {
 		list(
-				$minute,
-				$hour,
-				$dayOfMonth,
-				$month,
-				$dayOfWeek
-				) = explode(' ', $timeCode);
+			$minute,
+			$hour,
+			$dayOfMonth,
+			$month,
+			$dayOfWeek
+			) = explode(" ", $timeCode);
+		
 		$this->onMinute($minute)
-				->onHour($hour)
-				->onDayOfMonth($dayOfMonth)
-				->onMonth($month)
-				->onDayOfWeek($dayOfWeek);
+			->onHour($hour)
+			->onDayOfMonth($dayOfMonth)
+			->onMonth($month)
+			->onDayOfWeek($dayOfWeek);
 
 		return $this;
 	}
@@ -263,13 +265,12 @@ class Crontab {
 	 * @return object
 	 */
 	public function doJob($command) {
-		if (preg_match(self::$regex['command'], $command)) {
-			$this->jobs[] = $this->minute . ' ' .
-					$this->hour . ' ' .
-					$this->dayOfMonth . ' ' .
-					$this->month . ' ' .
-					$this->dayOfWeek . ' ' .
-					//($this->useUser ? $this->user . ' ' : '') .
+		if (preg_match(self::$regex["command"], $command)) {
+			$this->jobs[] = $this->minute . " " .
+					$this->hour . " " .
+					$this->dayOfMonth . " " .
+					$this->month . " " .
+					$this->dayOfWeek . " " .
 					$command .
 					($this->file_output != null ?  " >> {$this->file_output} 2>&1" : "");
 		}
@@ -282,18 +283,18 @@ class Crontab {
 	 * @return bool
 	 */
 	public function activate($includeOldJobs = true) {
-		$contents = implode("\n", $this->jobs);
-		$contents .= "\n";
+		$contents = implode(PHP_EOL, $this->jobs);
+		$contents .= PHP_EOL;
 
 		if ($includeOldJobs) {
 			$contents .= $this->listJobs();
 		}
 
 		if (is_writable($this->destination) || !file_exists($this->destination)) {
-			$this->exec($this->sudo . ' ' . $this->crontab . ($this->useUser ? ' -u '.$this->user.' ' : '') . ' -r');
+			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . " -r");
 
 			file_put_contents($this->destination, $contents, LOCK_EX);
-			$this->exec($this->sudo . ' ' . $this->crontab . ($this->useUser ? ' -u '.$this->user.' ' : ''). ' ' . $this->destination);
+			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : ""). " {$this->destination}");
 			return true;
 		}
 
@@ -305,7 +306,7 @@ class Crontab {
 	 * @return string
 	 */
 	public function listJobs() {
-		$out = exec($this->sudo . ' ' . $this->crontab . ($this->useUser ? ' -u '.$this->user.' ' : '') . ' -l');
+		$out = exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . " -l");
 		return $out;
 	}
 
