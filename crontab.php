@@ -34,7 +34,7 @@ class Crontab {
 	 * Location of the crontab executable
 	 * @var string
 	 */
-	public $crontab = '/etc/crontab';
+	public $crontab = 'crontab';
 
 	/**
 	 * Location to save the crontab file.
@@ -51,7 +51,7 @@ class Crontab {
 		'dayOfMonth' => '/[\*,\/\-\?LW0-9A-Za-z]+/',
 		'month' => '/[\*,\/\-0-9A-Z]+/',
 		'dayOfWeek' => '/[\*,\/\-0-9A-Z]+/',
-		'user' => '/^[a-z][\_\-a-z0-9]*$/',
+		'user' => '/^[a-z][\_\-A-Za-z0-9]*$/',
 		'command' => '/^(.)*$/',
 	);
 
@@ -90,6 +90,11 @@ class Crontab {
 	 */
 	public $user = 'root';
 	
+	/*
+	 * @var bool
+	 */
+	public $useUser = false;
+	
 	/**
 	 * @var string
 	 */
@@ -104,21 +109,26 @@ class Crontab {
 	 * Method __construct
 	 */
 	public function __construct() {
-		$out = array();
-		exec('whoami', $out);
-		debug($out);
+		$out = $this->exec('whoami');
 		$user = $out[0];
+		//$user = "phlyper";
+		$this->setUser($user);
+		$this->exec($this->sudo . " ls /var/spool/cron/contabs/{$user}");
+	}
+
+	/**
+	 * Method exec 
+	 * @param string $cmd
+	 * @param bool $debug
+	 * @return array
+	 */
+	public function exec($cmd, $debug = false) {
 		$out = array();
-		exec($this->sudo . " ls /var/spool/cron/contabs/{$user}", $out);
-		debug($out);
-		if (empty($out)) {
-			$out = array();
-			exec($this->sudo . " touch /var/spool/cron/contabs/{$user}", $out);
+		exec($cmd, $out);
+		//if($debug == true) {
 			debug($out);
-		}
-		$out = array();
-		exec($this->sudo . " ls /var/spool/cron/contabs/{$user}", $out);
-		debug($out);
+		//}
+		return $out;
 	}
 
 	/**
@@ -126,8 +136,7 @@ class Crontab {
 	 * @return string
 	 */
 	public function __toString() {
-		pr($this, true);
-		return "";//print_r($this, true);
+		return print_r($this, true);
 	}
 
 	/**
@@ -191,15 +200,27 @@ class Crontab {
 	}
 	
 	/**
-	 * Set user
+	 * Set the user owner of the crontab
 	 * @param string $user required
 	 * @return object
 	 */
 	public function setUser($user) {
-		if(preg_match(self::$user, $user)) {
-		$this->user = $user;
+		if(preg_match(self::$regex['user'], $user)) {
+			$this->user = $user;
 		}
-		return this;
+		return $this;
+	}
+	
+	/**
+	 * Set if is used the user in the cron job
+	 * @param bool $use required
+	 * @return object
+	 */
+	public function setUseUser($use) {
+		if(is_bool($use)) {
+			$this->useUser = $use;
+		}
+		return $this;
 	}
 	
 	/**
@@ -248,8 +269,8 @@ class Crontab {
 					$this->dayOfMonth . ' ' .
 					$this->month . ' ' .
 					$this->dayOfWeek . ' ' .
-					$this->user . ' ' .
-					$command.
+					//($this->useUser ? $this->user . ' ' : '') .
+					$command .
 					($this->file_output != null ?  " >> {$this->file_output} 2>&1" : "");
 		}
 		return $this;
@@ -257,8 +278,8 @@ class Crontab {
 
 	/**
 	 * Save the jobs to disk, remove existing cron
-	 * @param boolean $includeOldJobs optional
-	 * @return boolean
+	 * @param bool $includeOldJobs optional
+	 * @return bool
 	 */
 	public function activate($includeOldJobs = true) {
 		$contents = implode("\n", $this->jobs);
@@ -269,12 +290,10 @@ class Crontab {
 		}
 
 		if (is_writable($this->destination) || !file_exists($this->destination)) {
-			$out = array();
-			exec($this->sudo . ' ' . $this->crontab . ' -r', $out);
-			debug($out);
+			$this->exec($this->sudo . ' ' . $this->crontab . ($this->useUser ? ' -u '.$this->user.' ' : '') . ' -r');
+
 			file_put_contents($this->destination, $contents, LOCK_EX);
-			exec($this->sudo . ' ' . $this->crontab . ' ' . $this->destination, $out);
-			debug($out);
+			$this->exec($this->sudo . ' ' . $this->crontab . ($this->useUser ? ' -u '.$this->user.' ' : ''). ' ' . $this->destination);
 			return true;
 		}
 
@@ -286,8 +305,7 @@ class Crontab {
 	 * @return string
 	 */
 	public function listJobs() {
-		$out = array();
-		exec($this->sudo . ' ' . $this->crontab . ' -l', $out);
+		$out = exec($this->sudo . ' ' . $this->crontab . ($this->useUser ? ' -u '.$this->user.' ' : '') . ' -l');
 		return $out;
 	}
 
