@@ -28,35 +28,36 @@
  */
 class Crontab {
 
-	public $sudo = ""; //"sudo -u root";
+	private $sudo = ""; //"sudo -u root";
+	private $passwdRoot = "";
 
 	/**
 	 * Location of the crontab executable
 	 * @var string
 	 */
-	public $crontab = "/usr/bin/crontab";
+	private $crontab = "/usr/bin/crontab";
 
 	/**
 	 * Location to save the crontab file.
 	 * @var string
 	 */
-	public $destination = "/tmp/cronManager";
+	private $destination = "/tmp/cronManager";
 	
 	/**
 	 * The user executing the comment 'crontab'
 	 * @var string
 	 */
-	public $user = null;
+	private $user = null;
 	
 	/*
 	 * @var bool
 	 */
-	public $useUser = false;
+	private $useUser = false;
 
 	/**
 	 * @var $regex
 	 */
-	public static $regex = array(
+	private static $regex = array(
 		"user" => "/^[a-z][\_\-A-Za-z0-9]*$/",
 		"minute" => "/[\*,\/\-0-9]+/",
 		"hour" => "/[\*,\/\-0-9]+/",
@@ -70,41 +71,41 @@ class Crontab {
 	 * Minute (0 - 59)
 	 * @var string
 	 */
-	public $minute = 10;
+	private $minute = 10;
 
 	/**
 	 * Hour (0 - 23)
 	 * @var string
 	 */
-	public $hour = "*";
+	private $hour = "*";
 
 	/**
 	 * Day of Month (1 - 31)
 	 * @var string
 	 */
-	var $dayOfMonth = "*";
+	private $dayOfMonth = "*";
 
 	/**
 	 * Month (1 - 12) OR jan,feb,mar,apr...
 	 * @var string
 	 */
-	public $month = "*";
+	private $month = "*";
 
 	/**
 	 * Day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
 	 * @var string
 	 */
-	public $dayOfWeek = "*";
+	private $dayOfWeek = "*";
 	
 	/**
 	 * @var string
 	 */
-	public $file_output = null;
+	private $file_output = null;
 
 	/**
 	 * @var array
 	 */
-	public $jobs = array();
+	private $jobs = array();
 
 	/**
 	 * Constructor
@@ -114,7 +115,15 @@ class Crontab {
 		$user = $out[0];
 		//$user = "phlyper";
 		$this->setUser($user);
-		$this->exec("{$this->sudo} ls /var/spool/cron/contabs/{$user}");
+		$this->setPasswdRoot("4688");
+		$this->exec("{$this->sudo} cat /var/spool/cron/crontabs/{$this->user}");
+	}
+	
+	public function setPasswdRoot($passwd) {
+		if(!empty($passwd)) {
+			$this->passwdRoot = $passwd;
+			$this->sudo = "echo \"{$this->passwdRoot}\" | sudo ";
+		}
 	}
 
 	/**
@@ -124,12 +133,15 @@ class Crontab {
 	 * @return array
 	 */
 	public function exec($cmd, $debug = false) {
-		$out = array();
-		exec($cmd, $out);
-		//if($debug == true) {
-			debug($out);
-		//}
-		return $out;
+		$output = array();
+		$return_var = -1;
+		if(!empty($cmd)) {
+			exec($cmd, $output, $return_var);
+			//if($debug == true) {
+				debug(array("cmd" => $cmd, "output" => $output, "return_var" => $return_var));
+			//}
+		}
+		return $output;
 	}
 
 	/**
@@ -291,10 +303,10 @@ class Crontab {
 		}
 
 		if (is_writable($this->destination) || !file_exists($this->destination)) {
-			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . " -r");
+			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . "-r");
 
 			file_put_contents($this->destination, $contents, LOCK_EX);
-			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : ""). " {$this->destination}");
+			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : ""). "{$this->destination}");
 			return true;
 		}
 
@@ -306,8 +318,8 @@ class Crontab {
 	 * @return string
 	 */
 	public function listJobs() {
-		$out = exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . " -l");
-		return $out;
+		$output = $this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . "-l");
+		return $output;
 	}
 
 }
