@@ -28,33 +28,47 @@
  */
 class Crontab {
 
+	/**
+	 * @access private
+	 * @var string
+	 */
 	private $sudo = ""; //"sudo -u root";
+	
+	/**
+	 * @access private
+	 * @var string
+	 */
 	private $passwdRoot = "";
 
 	/**
 	 * Location of the crontab executable
+	 * @access private
 	 * @var string
 	 */
 	private $crontab = "/usr/bin/crontab";
 
 	/**
 	 * Location to save the crontab file.
+	 * @access private
 	 * @var string
 	 */
 	private $destination = "/tmp/cronManager";
 	
 	/**
 	 * The user executing the comment 'crontab'
+	 * @access private
 	 * @var string
 	 */
 	private $user = null;
 	
 	/*
+     * @access private
 	 * @var bool
 	 */
 	private $useUser = false;
 
 	/**
+	 * @access private
 	 * @var $regex
 	 */
 	private static $regex = array(
@@ -69,35 +83,41 @@ class Crontab {
 
 	/**
 	 * Minute (0 - 59)
+	 * @access private
 	 * @var string
 	 */
 	private $minute = 10;
 
 	/**
 	 * Hour (0 - 23)
+	 * @access private
 	 * @var string
 	 */
 	private $hour = "*";
 
 	/**
 	 * Day of Month (1 - 31)
+	 * @access private
 	 * @var string
 	 */
 	private $dayOfMonth = "*";
 
 	/**
 	 * Month (1 - 12) OR jan,feb,mar,apr...
+	 * @access private
 	 * @var string
 	 */
 	private $month = "*";
 
 	/**
 	 * Day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+	 * @access private
 	 * @var string
 	 */
 	private $dayOfWeek = "*";
 	
 	/**
+	 * @access private
 	 * @var string
 	 */
 	private $file_output = null;
@@ -118,6 +138,15 @@ class Crontab {
 		$this->setPasswdRoot("4688");
 		$this->exec("{$this->sudo} cat /var/spool/cron/crontabs/{$this->user}");
 	}
+	
+	/**
+     * Destrutor
+     */
+    public function __destruct() {
+        if ($this->destination && is_file($this->destination)) {
+            //@unlink($this->destination);
+        }
+    }
 	
 	public function setPasswdRoot($passwd) {
 		if(!empty($passwd)) {
@@ -295,13 +324,19 @@ class Crontab {
 	 * @return bool
 	 */
 	public function activate($includeOldJobs = true) {
-		$contents = implode(PHP_EOL, $this->jobs);
+		$contents = sprintf("#BEGIN %s", ($this->useUser ? $this->user : ""));
+		$contents .= PHP_EOL;
+		$contents .= implode(PHP_EOL, $this->jobs);
+		$contents .= PHP_EOL;
+		$contents .= sprintf("#END %s", ($this->useUser ? $this->user : ""));
 		$contents .= PHP_EOL;
 
 		if ($includeOldJobs) {
 			$contents .= $this->listJobs();
 		}
 
+		
+		@chmod($this->destination, 0755);
 		if (is_writable($this->destination) || !file_exists($this->destination)) {
 			$this->exec("{$this->sudo} " . $this->crontab . ($this->useUser ? " -u {$this->user} " : "") . "-r");
 
