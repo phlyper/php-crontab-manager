@@ -32,13 +32,13 @@ class Crontab {
      * @access private
      * @var string
      */
-    private $sudo = ""; //"sudo -u root";
+    private $sudo = "";
     
     /**
      * @access private
      * @var string
      */
-    private $userRoot = "root";
+    private $usernameRoot = "root";
     
     /**
      * @access private
@@ -141,7 +141,6 @@ class Crontab {
         $out = $this->exec("whoami");
         $user = $out[0];
         $this->setUser($user);
-        $this->setUsernamePasswordRoot("root", "4688");
         $this->exec("{$this->sudo} cat /var/spool/cron/crontabs/{$this->user}");
     }
     
@@ -162,13 +161,29 @@ class Crontab {
      */
     public function setUsernamePasswordRoot($username, $password) {
         if(!empty($username)) {
-            $this->userRoot = $username;
+            $this->usernameRoot = $username;
         }
         if(!empty($password)) {
             $this->passwordRoot = $password;
         }
-        $this->sudo = "echo \"{$this->passwordRoot}\" | sudo -u {$this->userRoot} ";
+        $this->sudo = "echo \"{$this->passwordRoot}\" | sudo -u {$this->usernameRoot} ";
     }
+	
+	/**
+	 * Get username Root
+	 * @return string
+	 */
+	public function getUsernameRoot() {
+		return $this->usernameRoot;
+	}
+	
+	/**
+	 * Get password Root
+	 * @return string
+	 */
+	public function getPasswordRoot() {
+		return $this->passwdRoot;
+	}
 
     /**
      * Method exec 
@@ -181,9 +196,9 @@ class Crontab {
         $return_var = -1;
         if(!empty($cmd)) {
             exec($cmd, $output, $return_var);
-            //if($debug == true) {
+            if($debug == true) {
                 debug(array("cmd" => $cmd, "output" => $output, "return_var" => $return_var));
-            //}
+            }
         }
         return $output;
     }
@@ -289,6 +304,14 @@ class Crontab {
         $this->file_output = $file_output;
         return $this;
     }
+
+	/**
+	 * Get jobs list
+	 * @return array
+	 */
+	public function getJobs() {
+		return $this->jobs;
+	}
 
     /**
      * Set entire time code with one public function. 
