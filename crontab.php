@@ -154,12 +154,12 @@ class Crontab {
         }
     }
     
-	/**
-	 * Set username and password root
-	 * @param $username Username Root
-	 * @param $password Password Root
-	 * @return void
-	 */
+    /**
+     * Set username and password root
+     * @param $username Username Root
+     * @param $password Password Root
+     * @return void
+     */
     public function setUsernamePasswordRoot($username, $password) {
         if(!empty($username)) {
             $this->userRoot = $username;
@@ -167,7 +167,7 @@ class Crontab {
         if(!empty($password)) {
             $this->passwordRoot = $password;
         }
-		$this->sudo = "echo \"{$this->passwordRoot}\" | sudo -u {$this->userRoot} ";
+        $this->sudo = "echo \"{$this->passwordRoot}\" | sudo -u {$this->userRoot} ";
     }
 
     /**
