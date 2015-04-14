@@ -140,9 +140,8 @@ class Crontab {
     public function __construct() {
         $out = $this->exec("whoami");
         $user = $out[0];
-        //$user = "phlyper";
         $this->setUser($user);
-        $this->setPasswdRoot("4688");
+        $this->setUsernamePasswordRoot("root", "4688");
         $this->exec("{$this->sudo} cat /var/spool/cron/crontabs/{$this->user}");
     }
     
@@ -155,11 +154,20 @@ class Crontab {
         }
     }
     
-    public function setPasswdRoot($passwd) {
-        if(!empty($passwd)) {
-            $this->passwdRoot = $passwd;
-            $this->sudo = "echo \"{$this->passwdRoot}\" | sudo -u {$this->userRoot} ";
+	/**
+	 * Set username and password root
+	 * @param $username Username Root
+	 * @param $password Password Root
+	 * @return void
+	 */
+    public function setUsernamePasswordRoot($username, $password) {
+        if(!empty($username)) {
+            $this->userRoot = $username;
         }
+        if(!empty($password)) {
+            $this->passwordRoot = $password;
+        }
+		$this->sudo = "echo \"{$this->passwordRoot}\" | sudo -u {$this->userRoot} ";
     }
 
     /**
