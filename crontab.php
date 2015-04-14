@@ -44,7 +44,7 @@ class Crontab {
      * @access private
      * @var string
      */
-    private $passwdRoot = "";
+    private $passwordRoot = "";
 
     /**
      * Location of the crontab executable
@@ -182,7 +182,7 @@ class Crontab {
 	 * @return string
 	 */
 	public function getPasswordRoot() {
-		return $this->passwdRoot;
+		return $this->passwordRoot;
 	}
 
     /**
