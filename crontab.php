@@ -38,6 +38,12 @@ class Crontab {
      * @access private
      * @var string
      */
+    private $userRoot = "root";
+    
+    /**
+     * @access private
+     * @var string
+     */
     private $passwdRoot = "";
 
     /**
@@ -152,7 +158,7 @@ class Crontab {
     public function setPasswdRoot($passwd) {
         if(!empty($passwd)) {
             $this->passwdRoot = $passwd;
-            $this->sudo = "echo \"{$this->passwdRoot}\" | sudo ";
+            $this->sudo = "echo \"{$this->passwdRoot}\" | sudo -u {$this->userRoot} ";
         }
     }
 
