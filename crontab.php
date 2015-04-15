@@ -133,15 +133,24 @@ class Crontab {
      * @var array
      */
     private $jobs = array();
+	
+	/**
+	 * @acces private
+	 * @var string
+	 */
+	private $id_token = null;
 
-    /**
+	/**
      * Constructor
      */
-    public function __construct() {
+    public function __construct($id_token) {
+		$this->id_token = $id_token;
         $out = $this->exec("whoami");
-        $user = $out[0];
-        $this->setUser($user);
-        $this->exec("{$this->sudo} cat /var/spool/cron/crontabs/{$this->user}");
+        if(isset($out[0])) {
+			$user = $out[0];
+			$this->setUser($user);
+			$this->exec("{$this->sudo} cat /var/spool/cron/crontabs/{$this->user}");
+		}
     }
     
     /**
@@ -149,7 +158,7 @@ class Crontab {
      */
     public function __destruct() {
         if ($this->destination && is_file($this->destination)) {
-            //@unlink($this->destination);
+            @unlink($this->destination);
         }
     }
     
@@ -355,6 +364,43 @@ class Crontab {
         }
         return $this;
     }
+	
+	/**
+     * Render to string method
+     * 
+	 * @param array $newContents
+	 * @param array|null $oldContents
+     * @return string
+     */
+	public function render($newContents, $oldContents = null) {
+		$contents = "";
+		
+		if($oldContents != null && is_array($oldContents)) {
+			$beginIndex = $endIndex = -1;
+			foreach($oldContents as $key => $val) {
+				if(isset($newContents[0]) && $val == $newContents[0]) {
+					$beginIndex = $key;
+				}
+				if(isset($newContents[count($newContents)-1]) && $val == $newContents[count($newContents)-1]) {
+					$endIndex = $key;
+				}
+			}
+
+			if($beginIndex > -1 && $endIndex > -1) {
+				foreach(range($beginIndex, $endIndex) as $index) {
+					unset($oldContents[$index]);
+				}
+			}
+			
+			$contents .= implode(PHP_EOL, $oldContents);
+			$contents .= PHP_EOL;
+		}
+		
+		$contents .= implode(PHP_EOL, $newContents);
+		$contents .= PHP_EOL;
+		
+		return $contents;
+	}
 
     /**
      * Save the jobs to disk, remove existing cron
@@ -362,17 +408,19 @@ class Crontab {
      * @return bool
      */
     public function activate($includeOldJobs = true) {
-        $contents = sprintf("#BEGIN %s", ($this->useUser ? $this->user : ""));
-        $contents .= PHP_EOL;
-        $contents .= implode(PHP_EOL, $this->jobs);
-        $contents .= PHP_EOL;
-        $contents .= sprintf("#END %s", ($this->useUser ? $this->user : ""));
-        $contents .= PHP_EOL;
+		$newContents = array();
+		$newContents[] = sprintf("# BEGIN %s", ($this->id_token ? $this->id_token : ""));
+        foreach($this->jobs as $key => $val) {
+			$newContents[] = $val;
+		}
+        $newContents[] = sprintf("# END %s", ($this->id_token ? $this->id_token : ""));
 
+		$oldContents = null;
         if ($includeOldJobs) {
-            $contents .= $this->listJobs();
+            $oldContents = $this->listJobs();
         }
-
+		
+		$contents = $this->render($newContents, $oldContents);
         
         @chmod($this->destination, 0755);
         if (is_writable($this->destination) || !file_exists($this->destination)) {
