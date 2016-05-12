@@ -1,0 +1,19 @@
+{
+    "name": "phlyper/php-crontab-manager",
+    "type": "library",
+    "description": "Php script for manamgement of crontab use PHP 5.3",
+    "keywords": ["crontab","cron","lunix","manager"],
+    "homepage": "https://github.com/phlyper/php-crontab-manager",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Phlyper Oban",
+            "email": "phlyper@yandex.com",
+            "homepage": "http://phlyper-dev.info",
+            "role": "Developer web"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    }
+}
